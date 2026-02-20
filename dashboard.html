@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Mes Projets - Expert Hydraulique</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ 
+ <style>
+  :root {
+   --primary: #673AB7;
+   --secondary: #512DA8;
+  }
+  
+  .card {
+   background: white;
+   border-radius: 12px;
+   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+   transition: all 0.3s;
+  }
+  
+  .card:hover {
+   transform: translateY(-4px);
+   box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+  }
+  
+  .project-card {
+   cursor: pointer;
+   border: 2px solid transparent;
+  }
+  
+  .project-card:hover {
+   border-color: var(--primary);
+  }
+ </style>
+</head>
+<body class="bg-gray-50">
+
+ <!-- Header -->
+ <header class="bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-6 py-4">
+   <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+     <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z"/>
+     </svg>
+     <div>
+      <h1 class="text-2xl font-bold">Expert Hydraulique</h1>
+      <p class="text-sm text-purple-100">Tableau de bord</p>
+     </div>
+    </div>
+    
+    <div class="flex items-center gap-4">
+     <div class="text-right">
+      <p class="text-sm text-purple-100">Connecté</p>
+      <p class="font-semibold" id="userEmail">...</p>
+     </div>
+     <button onclick="handleLogout()" 
+      class="px-4 py-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition">
+      🚪 Déconnexion
+     </button>
+    </div>
+   </div>
+  </div>
+ </header>
+
+ <div class="max-w-7xl mx-auto p-6">
+  
+  <!-- Actions rapides -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+   
+   <!-- Nouveau Projet -->
+   <div class="card p-8 text-center cursor-pointer hover:shadow-xl" onclick="window.location.href='index_PDF_CLEAN.html'">
+    <div class="inline-block p-4 bg-gradient-to-r from-green-400 to-teal-500 rounded-full mb-4">
+     <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+     </svg>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">➕ Nouveau Projet</h2>
+    <p class="text-gray-600">Créer une nouvelle configuration hydraulique</p>
+   </div>
+   
+   <!-- Mes Projets -->
+   <div class="card p-8 text-center">
+    <div class="inline-block p-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mb-4">
+     <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+     </svg>
+    </div>
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">📁 Mes Projets</h2>
+    <p class="text-gray-600 mb-4">Voir ci-dessous ⬇️</p>
+    <button onclick="loadProjects()" 
+     class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+     🔄 Actualiser
+    </button>
+   </div>
+   
+  </div>
+  
+  <!-- Statistiques -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+   <div class="card p-6">
+    <p class="text-gray-600 text-sm">Total Projets</p>
+    <p class="text-3xl font-bold text-purple-600" id="statTotal">0</p>
+   </div>
+   <div class="card p-6">
+    <p class="text-gray-600 text-sm">Brouillons</p>
+    <p class="text-3xl font-bold text-yellow-600" id="statDrafts">0</p>
+   </div>
+   <div class="card p-6">
+    <p class="text-gray-600 text-sm">Validés</p>
+    <p class="text-3xl font-bold text-green-600" id="statValidated">0</p>
+   </div>
+   <div class="card p-6">
+    <p class="text-gray-600 text-sm">Ce mois</p>
+    <p class="text-3xl font-bold text-blue-600" id="statMonth">0</p>
+   </div>
+  </div>
+  
+  <!-- Liste des projets -->
+  <div class="card p-6">
+   <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">📋 Tous mes projets</h2>
+    <div class="flex gap-2">
+     <input type="text" id="searchInput" placeholder="🔍 Rechercher..." 
+      class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
+      onkeyup="filterProjects()">
+    </div>
+   </div>
+   
+   <div id="projectsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Chargement -->
+    <div class="col-span-full text-center py-12">
+     <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+     <p class="text-gray-600">Chargement des projets...</p>
+    </div>
+   </div>
+  </div>
+  
+ </div>
+
+ <script>
+  // Configuration Supabase
+  const SUPABASE_URL = 'https://kvrfqjjbugyngleayxge.sbClient.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2cmZxampidWd5bmdsZWF5eGdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0MTc4MjgsImV4cCI6MjA4Njk5MzgyOH0.IagXhJPrAnizYAsUQ4WmBzy94cWx5WTdbSrEA_qj06c';
+  
+  const sbClient = window.sbClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let currentUser = null;
+  let allProjects = [];
+  
+  // Vérifier authentification
+  async function checkAuth() {
+   const { data: { user } } = await sbClient.auth.getUser();
+   
+   if (!user) {
+    // Pas connecté, rediriger vers login
+    window.location.href = 'login.html';
+    return;
+   }
+   
+   currentUser = user;
+   document.getElementById('userEmail').textContent = user.email;
+   
+   // Charger projets
+   loadProjects();
+  }
+  
+  // Déconnexion
+  async function handleLogout() {
+   const { error } = await sbClient.auth.signOut();
+   if (!error) {
+    window.location.href = 'login.html';
+   }
+  }
+  
+  // Charger projets
+  async function loadProjects() {
+   try {
+    const { data, error } = await sbClient
+     .from('projects')
+     .select('*')
+     .eq('user_id', currentUser.id)
+     .order('updated_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    allProjects = data || [];
+    displayProjects(allProjects);
+    updateStats(allProjects);
+    
+   } catch (error) {
+    console.error('Erreur:', error);
+    document.getElementById('projectsList').innerHTML = `
+     <div class="col-span-full text-center py-12">
+      <p class="text-red-600">❌ Erreur chargement: ${error.message}</p>
+     </div>
+    `;
+   }
+  }
+  
+  // Afficher projets
+  function displayProjects(projects) {
+   const container = document.getElementById('projectsList');
+   
+   if (projects.length === 0) {
+    container.innerHTML = `
+     <div class="col-span-full text-center py-12">
+      <svg class="w-20 h-20 mx-auto mb-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+       <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+      </svg>
+      <p class="text-xl text-gray-500 mb-4">Aucun projet pour le moment</p>
+      <button onclick="window.location.href='index_PDF_CLEAN.html'"
+       class="px-6 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-lg font-semibold hover:shadow-lg transition">
+       ➕ Créer mon premier projet
+      </button>
+     </div>
+    `;
+    return;
+   }
+   
+   container.innerHTML = '';
+   
+   projects.forEach(project => {
+    const statusBadge = project.status === 'draft' ? 
+     '<span class="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs rounded-full">📝 Brouillon</span>' :
+     '<span class="px-2 py-1 bg-green-200 text-green-800 text-xs rounded-full">✅ Validé</span>';
+    
+    const card = document.createElement('div');
+    card.className = 'project-card card p-6';
+    card.innerHTML = `
+     <div class="flex justify-between items-start mb-4">
+      <h3 class="font-bold text-lg text-gray-800 flex-1">${project.name}</h3>
+      ${statusBadge}
+     </div>
+     
+     <div class="space-y-2 mb-4 text-sm text-gray-600">
+      <p>👤 ${project.client || 'Sans client'}</p>
+      <p>⚙️ ${project.pressure} bar · ${project.flow_rate} L/min</p>
+      <p>🔧 ${project.pump_type === 'fixed' ? 'Pompe fixe' : 'Pompe variable'}</p>
+      <p class="text-xs text-gray-400">📅 ${new Date(project.updated_at).toLocaleDateString('fr-FR')} ${new Date(project.updated_at).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</p>
+     </div>
+     
+     <div class="flex gap-2">
+      <button onclick="openProject('${project.id}')"
+       class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
+       📂 Ouvrir
+      </button>
+      <button onclick="duplicateProject('${project.id}')"
+       class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+       📋
+      </button>
+      <button onclick="deleteProject('${project.id}', '${project.name.replace(/'/g, "\\'")}')"
+       class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
+       🗑️
+      </button>
+     </div>
+    `;
+    
+    container.appendChild(card);
+   });
+  }
+  
+  // Statistiques
+  function updateStats(projects) {
+   document.getElementById('statTotal').textContent = projects.length;
+   
+   const drafts = projects.filter(p => p.status === 'draft').length;
+   document.getElementById('statDrafts').textContent = drafts;
+   
+   const validated = projects.filter(p => p.status === 'validated').length;
+   document.getElementById('statValidated').textContent = validated;
+   
+   const thisMonth = projects.filter(p => {
+    const date = new Date(p.created_at);
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+   }).length;
+   document.getElementById('statMonth').textContent = thisMonth;
+  }
+  
+  // Filtrer projets
+  function filterProjects() {
+   const search = document.getElementById('searchInput').value.toLowerCase();
+   const filtered = allProjects.filter(p => 
+    p.name.toLowerCase().includes(search) ||
+    (p.client && p.client.toLowerCase().includes(search))
+   );
+   displayProjects(filtered);
+  }
+  
+  // Ouvrir projet
+  function openProject(projectId) {
+   // Sauvegarder l'ID dans sessionStorage
+   sessionStorage.setItem('loadProjectId', projectId);
+   // Rediriger vers l'app
+   window.location.href = 'index_PDF_CLEAN.html';
+  }
+  
+  // Dupliquer projet
+  async function duplicateProject(projectId) {
+   if (!confirm('Dupliquer ce projet ?')) return;
+   
+   try {
+    const { data: original, error } = await sbClient
+     .from('projects')
+     .select('*')
+     .eq('id', projectId)
+     .single();
+    
+    if (error) throw error;
+    
+    const duplicate = { ...original };
+    delete duplicate.id;
+    delete duplicate.created_at;
+    delete duplicate.updated_at;
+    duplicate.name = `${original.name} (Copie)`;
+    duplicate.user_id = currentUser.id;
+    
+    const { data: newProject, error: insertError } = await sbClient
+     .from('projects')
+     .insert([duplicate])
+     .select()
+     .single();
+    
+    if (insertError) throw insertError;
+    
+    alert('✅ Projet dupliqué !');
+    loadProjects();
+    
+   } catch (error) {
+    alert('❌ Erreur: ' + error.message);
+   }
+  }
+  
+  // Supprimer projet
+  async function deleteProject(projectId, projectName) {
+   if (!confirm(`⚠️ Supprimer définitivement "${projectName}" ?`)) return;
+   
+   try {
+    const { error } = await sbClient
+     .from('projects')
+     .delete()
+     .eq('id', projectId);
+    
+    if (error) throw error;
+    
+    alert('✅ Projet supprimé');
+    loadProjects();
+    
+   } catch (error) {
+    alert('❌ Erreur: ' + error.message);
+   }
+  }
+  
+  // Initialiser
+  checkAuth();
+ </script>
+
+</body>
+</html>
