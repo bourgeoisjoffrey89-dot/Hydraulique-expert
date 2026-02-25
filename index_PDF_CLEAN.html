@@ -969,6 +969,27 @@
    }
  }
  
+ // Panneau utilisateur retractable
+ let userPanelOpen = true;
+ function toggleUserPanel() {
+   userPanelOpen = !userPanelOpen;
+   const content = document.getElementById('userPanelContent');
+   const arrow = document.getElementById('userPanelArrow');
+   if (userPanelOpen) {
+     content.style.transform = 'translateX(0)';
+     arrow.textContent = '▶';
+   } else {
+     content.style.transform = 'translateX(100%)';
+     arrow.textContent = '◀';
+   }
+ }
+ // Demarrer avec le panneau masque
+ setTimeout(() => { 
+   if (document.getElementById('userPanelContent')) {
+     toggleUserPanel();
+   }
+ }, 2000);
+
  function toggleProjectsPanel() {
    const modal = document.getElementById('projectsModal');
    if (modal) {
@@ -1152,9 +1173,19 @@
    </div>
  </div>
  
- <!-- Section Utilisateur Connecté -->
- <div id="userSection" class="fixed top-4 right-4 z-50" style="display:none;">
-   <div class="bg-white shadow-xl rounded-lg p-4 border-2 border-green-500" style="width: 280px;">
+ <!-- Section Utilisateur Connecté - Panneau rétractable -->
+ <div id="userSection" class="fixed top-4 right-0 z-50" style="display:none; overflow:visible;">
+   <!-- Bouton flèche pour ouvrir/fermer -->
+   <div id="userPanelToggle" onclick="toggleUserPanel()" 
+     style="position:absolute; left:-32px; top:8px; width:32px; height:48px; 
+     background: linear-gradient(135deg, #059669, #10b981); 
+     border-radius:8px 0 0 8px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+     box-shadow: -2px 2px 8px rgba(0,0,0,0.2); transition: all 0.3s;">
+     <span id="userPanelArrow" style="color:white; font-size:18px; font-weight:bold; transition: transform 0.3s;">◀</span>
+   </div>
+   <!-- Panneau coulissant -->
+   <div id="userPanelContent" class="bg-white shadow-xl rounded-l-lg p-4 border-2 border-green-500" 
+     style="width: 280px; transition: transform 0.3s ease; transform: translateX(0);">
      <div class="flex items-center justify-between mb-3">
        <div class="flex-1">
          <p class="text-xs text-gray-600">Connecté ✅</p>
@@ -2428,7 +2459,7 @@ async function saveToCloud() {
   const flowRate = parseFloat(document.getElementById('flowRate')?.value) || 0;
   const power = parseFloat(document.getElementById('power')?.value) || 0;
   const efficiency = parseFloat(document.getElementById('efficiency')?.value) || 90;
-  const reservoirVolume = parseFloat(document.getElementById('reservoirVolume')?.value) || 0;
+  const reservoirVolume = parseFloat(document.getElementById('resVolume')?.textContent) || 0;
   const fluidGrade = document.getElementById('fluidGrade')?.value || '46';
   const pumpType = document.querySelector('input[name="pumpType"]:checked')?.value || 'fixed';
 
@@ -2512,8 +2543,14 @@ async function loadProjectFromCloud(projectId) {
     document.getElementById('flowRate').value = project.flow_rate || 0;
     document.getElementById('power').value = project.power || 0;
     document.getElementById('efficiency').value = project.efficiency || 90;
-    document.getElementById('reservoirVolume').value = project.reservoir_volume || 0;
-    document.getElementById('fluidGrade').value = project.fluid_grade || '46';
+    // reservoirVolume est un span calcule, pas un input - on charge les dimensions si disponibles
+    if (project.full_data && project.full_data.reservoir_dimensions) {
+      const dims = project.full_data.reservoir_dimensions;
+      if (dims.length && document.getElementById('resLength')) document.getElementById('resLength').value = dims.length;
+      if (dims.width && document.getElementById('resWidth')) document.getElementById('resWidth').value = dims.width;
+      if (dims.height && document.getElementById('resHeight')) document.getElementById('resHeight').value = dims.height;
+    }
+    if (document.getElementById('fluidGrade')) document.getElementById('fluidGrade').value = project.fluid_grade || '46';
 
     if (project.pump_type) {
       const pumpTypeRadio = document.querySelector(`input[name="pumpType"][value="${project.pump_type}"]`);
